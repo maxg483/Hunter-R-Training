@@ -3,6 +3,7 @@
 ## Original script by AE Melton. 
 ### Modified and created by ML Gaynor 
 ### Edited by Max Gebhart
+## Edited further by Hunter Kelzenburg
 
 ### Load packages 
 library(ridigbio)
@@ -87,3 +88,4 @@ write.csv(rbind.data.frame(Hel_deb_DF, Hel_exi_DF, Hel_nut_DF, Hel_par_DF, Hel_t
 ##while editing code I would not accidentally mess up the master data
 ##think of this more as a dummy file that can get messed up a little more
 write.csv(rbind.data.frame(Hel_agr_DF, Hel_ang_DF, Hel_ano_DF, Hel_ann_DF, Hel_ari_DF, Hel_atr_DF, Hel_cal_DF, Hel_car_DF, Hel_cil_DF, Hel_cus_DF, Hel_deb_DF, Hel_dec_DF, Hel_des_DF, Hel_div_DF, Hel_exi_DF, Hel_egg_DF, Hel_flo_DF, Hel_gig_DF, Hel_gla_DF, Hel_gra_DF, Hel_gro_DF, Hel_het_DF, Hel_hir_DF, Hel_lac_DF, Hel_lae_DF, Hel_lon_DF, Hel_max_DF, Hel_mic_DF, Hel_mol_DF, Hel_neg_DF, Hel_niv_DF, Hel_nut_DF, Hel_occ_DF, Hel_par_DF, Hel_pau_DF, Hel_pet_DF, Hel_por_DF, Hel_pra_DF, Hel_pum_DF, Hel_rad_DF, Hel_res_DF, Hel_sal_DF, Hel_sch_DF, Hel_sil_DF, Hel_sim_DF, Hel_smi_DF, Hel_tub_DF, Hel_win_DF), "NA_Data/Master_Hel_DataTESTER.csv", row.names = FALSE)
+
