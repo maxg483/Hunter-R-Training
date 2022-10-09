@@ -1,0 +1,152 @@
+# Load Packages 
+library(maptools)
+library(raster)
+library(rgdal)
+library(sp)
+library(maps)
+library(mapproj)
+library(gdalUtils)
+library(GSIF)
+library(ggplot2)
+library(alphahull)
+library(gtools)
+library(rgeos)
+library(rnaturalearth)
+
+
+# Load Climate and Soil layers
+{
+alt <- raster("Climate Data/ wc2.1_30s_elev.tif")
+bio1 <- raster()
+bio4 <- raster()
+bio5 <- raster()
+}
+
+
+# Define desired extent
+## Before cropping our layers we will also explore a spatial shape of our points
+## this shape will use the geographic points used for Maxent and 
+# this will allow for a smaller area for the climatic layers to be cropped onto 
+# rather than cropping it onto an entire continent for only a smaller area
+Hel_occpoints <- read.csv("Occurrence Data/ Complete Clean.csv")
+points <- SpatialPoints(Hel_occpoints[,2:3])
+hull <- gConvexHull(points)
+
+
+# A buffer can also be drawn to include more area around the Maxent points
+# which prevents possible points from being removed 
+## increasing the buffer width will make the shape of the convex hull more round!
+hullnbuffer <- gBuffer(hull, width = 2)
+
+
+## We will make a general extent in order to decrease the amount of decimals to make similar layer sizes
+e <- extent(-130, -59, 13, 59)
+ex <- as(e, "SpatialPolygons")
+
+
+{
+
+# Repeat with all additional files 
+ <- mask(, ex)
+ <- crop(, extent(e))
+writeRaster(, , format="ascii")
+
+
+} 
+
+# Select layers for MaxEnt
+## We only want to include layers that are not highly correlated.
+## To assess which layers we will include, we want to look at the pearson correlation coefficient among layers.
+### Stack all layers
+rasterlist <- list.files(path = "Climate Layers/ Modified Gen Layers/" , full.names = TRUE)
+
+stack <- stack(rasterlist)
+stacking <- stack()
+
+### Then calculate the correlation coefficient
+corr <- layerStats(stacking, 'pearson', na.rm=TRUE)
+
+### Isolate only the pearson correlation coefficient 
+c <- corr$`pearson correlation coefficient`
+
+c <- abs(c)
+
+### Write file and view in excel
+write.csv(c, "Climate Data/ ")
+
+## Highly correlated layers (> |0.80|) can impact the statistical significance 
+## of the niche models and therefore must be removed. 
+
+
+# Read csv
+helianthus_points <- read.csv("Occurrence Data/Complete Clean.csv")
+
+# fix species column 
+helianthus_points$name <- gsub(" ", "_", helianthus_points$name)
+list <- unique(helianthus_points$name)
+
+# Read in a raster
+alte <- getData('CMIP5', var='tmin', res=10, rcp=85, model='AC', year=70)
+alte <- alte[[1]]
+
+## Crop to decrease processing time
+e <- extent(-180, -40, 0, 90)
+alte <- crop(alte, e)
+
+
+## Function to convert the area to degrees for buffer construction
+convert_to_degrees <- function(area_m){
+  area_degree <- area_m/111
+  return(area_degree)
+}
+
+## This is the function that will specifically make a buffer for a given species
+scalingbuffer_training <- function(df, stack){
+  pts <- SpatialPoints(df[,2:3])
+  hull <- gConvexHull(pts)
+  area <- gArea(hull)
+  bwidth <- area*.10
+  bwidth <- convert_to_degrees(bwidth)
+  buffer <- gBuffer(hull, width = bwidth)
+  return(buffer)
+}
+
+
+Exilis <- scalingbuffer_training("Occurrence Data/ Helianthus_Exilis.csv", )
+writeRaster(Exilis, "Climate Data/ Species Layers/ Helianthus_exilis.asc", format = "ascii")
+
+
+## Then we're going to evaluate our kept layers and get them ready for training layer creation
+# There are 2 methods for how it can be done either pull directly from your files
+{
+keptlayers <- list.files(path= "Climate Data/ Modified Gen Layers", pattern = "*.asc", full.names = T)
+keptlayers <- mixedsort(sort(keptlayers))
+keptstack <- raster::stack(keptlayers)
+}
+
+# Or you can stack the layers that are still loaded into the environment 
+keptstack <- stack()
+
+# Then we will make a list of the layer names to use when naming our files
+# and this will be used by the function to create our species training layers
+layernames <- c()
+
+newfold <- "Climate Data/ Species Layers/"
+
+Slayer <- function(file, namefile){
+  hnb <- raster(file)
+  hnb <- as(hnb, "SpatialPolygons")
+  for (j in 1:4){
+    layername <- layernames[j]
+    layer <- keptstack[[j]]
+    layers <- mask(layer, hnb)
+    layer <- crop(layers, extent(hnb))
+    folder <- paste(newfold, namefile, layername, ".asc", sep = "")
+    writeRaster(layer, folder)
+  }
+}
+
+Exilis <- Slayer("Climate Data/ Species Layers/ Helianthus_exilis.asc", "Helianthus_exilis/")
+
+
+
